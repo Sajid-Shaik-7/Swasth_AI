@@ -1,0 +1,47 @@
+:root {
+  --bg: #FBF6EC;
+  --teal: #155E56;
+  --teal-dark: #0E4842;
+  --mustard: #E0A72E;
+  --mustard-soft: #F7E3B3;
+  --green: #3F9142;
+  --green-soft: #E4F3E3;
+  --amber: #E0A72E;
+  --amber-soft: #FBEDCE;
+  --red: #C0392B;
+  --red-soft: #FBE0DC;
+  --ink: #20302B;
+  --ink-soft: #5C6B65;
+  --card: #FFFFFF;
+  --line: #E7DFCC;
+  --radius: 22px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans', 'Noto Sans Telugu', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+button {
+  font-family: inherit;
+  outline: none;
+}

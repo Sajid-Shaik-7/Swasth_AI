@@ -1,0 +1,770 @@
+/* Swasth AI App Styling */
+
+.app-viewport {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 768px) {
+  .app-viewport {
+    margin: 20px 0;
+    min-height: calc(100vh - 40px);
+    border-radius: 36px;
+    border: 8px solid #0E1B18;
+    overflow: hidden;
+  }
+}
+
+/* App Header */
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-badge .logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--teal);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-family: 'Baloo 2';
+  font-size: 16px;
+}
+
+.brand-badge .brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-badge .name {
+  font-family: 'Baloo 2';
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--teal-dark);
+  line-height: 1.1;
+}
+
+.brand-badge .tagline {
+  font-family: 'Noto Sans Telugu';
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-indicator-badge {
+  background: var(--teal);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulseBadge 2s infinite;
+}
+
+.pulse-icon {
+  animation: spinSlow 4s linear infinite;
+}
+
+@keyframes pulseBadge {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.98); }
+}
+
+.lang-toggle-btn {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lang-toggle-btn:hover {
+  border-color: var(--teal);
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--teal-dark);
+}
+
+/* Screen Body */
+.screen-body {
+  flex: 1;
+  padding: 18px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Typography */
+.top-title {
+  font-family: 'Baloo 2';
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--teal-dark);
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.top-title .te {
+  display: block;
+  font-family: 'Noto Sans Telugu';
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.sub-desc {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+.sub-desc .te {
+  display: block;
+  font-family: 'Noto Sans Telugu';
+  margin-top: 2px;
+}
+
+/* Big Buttons */
+.big-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 16px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  font-family: 'Baloo 2';
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px -8px rgba(21, 94, 86, .55);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s;
+  text-align: left;
+}
+
+.big-btn:active {
+  transform: scale(0.98);
+}
+
+.big-btn .ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.big-btn .txt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+  flex: 1;
+}
+
+.big-btn .txt .te {
+  font-family: 'Noto Sans Telugu';
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.95;
+  margin-top: 2px;
+}
+
+.big-btn.mustard {
+  background: var(--mustard);
+  color: #3a2a05;
+  box-shadow: 0 8px 18px -8px rgba(224, 167, 46, .6);
+}
+
+.big-btn.mustard .ic {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.big-btn.ghost {
+  background: #fff;
+  color: var(--teal-dark);
+  border: 2px solid var(--line);
+  box-shadow: none;
+}
+
+.big-btn.ghost .ic {
+  background: var(--mustard-soft);
+  color: #3a2a05;
+}
+
+.big-btn.red {
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px rgba(192, 57, 43, 0.6);
+}
+
+/* Back Row */
+.back-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.back-chip {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--teal-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.15s;
+}
+
+.back-chip:hover {
+  border-color: var(--teal);
+  background: var(--mustard-soft);
+}
+
+/* Mic Circle */
+.mic-circle-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 14px auto 10px;
+}
+
+.mic-circle {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 10px 25px rgba(21, 94, 86, 0.4);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.mic-circle:active {
+  transform: scale(0.95);
+}
+
+.mic-circle::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px dashed var(--mustard);
+  opacity: .7;
+  animation: rotateBorder 12s linear infinite;
+}
+
+.mic-circle.listening {
+  background: var(--red) !important;
+  box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7);
+  animation: pulseMic 1.5s infinite;
+}
+
+.mic-circle.listening::after {
+  border-color: #fff;
+}
+
+@keyframes pulseMic {
+  0% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(192, 57, 43, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+  }
+}
+
+@keyframes rotateBorder {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Textarea & Input Mock */
+.textarea-mock {
+  width: 100%;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  color: var(--ink);
+  min-height: 80px;
+  font-family: 'Noto Sans Telugu', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.textarea-mock:focus {
+  border-color: var(--teal);
+}
+
+/* Quick Suggestion Chips */
+.quick-chip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal-dark);
+  cursor: pointer;
+  transition: 0.15s;
+  font-family: 'Noto Sans Telugu', sans-serif;
+}
+
+.quick-chip:hover {
+  background: var(--mustard-soft);
+  border-color: var(--mustard);
+}
+
+.field {
+  margin-top: 10px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.field input, .field textarea {
+  width: 100%;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-family: inherit;
+}
+
+.field input:focus, .field textarea:focus {
+  border-color: var(--teal);
+}
+
+/* Progress Tracker */
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.progress-header .step-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-family: 'Baloo 2';
+}
+
+.dots-track {
+  display: flex;
+  gap: 5px;
+}
+
+.dots-track .dot {
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+
+.dots-track .dot.active {
+  background: var(--teal);
+}
+
+/* Advice Card */
+.advice-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  margin-top: 10px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.advice-card .te {
+  font-family: 'Noto Sans Telugu';
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+/* Quick Selection Pills */
+.pill-row {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.pill {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--line);
+  color: var(--ink);
+  background: #fff;
+  cursor: pointer;
+  transition: 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.pill .te {
+  font-family: 'Noto Sans Telugu';
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.pill:hover {
+  border-color: var(--teal);
+  background: #f0f7f5;
+}
+
+.pill.on {
+  background: var(--teal);
+  color: #fff;
+  border-color: var(--teal);
+}
+
+.pill.on .te {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.confirmed-chip {
+  display: inline-block;
+  background: var(--green-soft);
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'Noto Sans Telugu', sans-serif;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Triage Tier Badge */
+.tier-badge {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 12px auto 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+.tier-badge::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  opacity: .35;
+}
+
+.tier-badge .icon {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.tier-badge .label {
+  font-family: 'Baloo 2';
+  font-weight: 800;
+  font-size: 16px;
+  margin-top: 4px;
+}
+
+.tier-badge .te {
+  font-family: 'Noto Sans Telugu';
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tier-green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.tier-amber {
+  background: var(--amber-soft);
+  color: #8a6410;
+}
+
+.tier-red {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+/* Spoken Audio Banner */
+.speak-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  background: var(--teal-dark);
+  color: #fff;
+  padding: 12px;
+  border-radius: 14px;
+  font-family: 'Baloo 2';
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.speak-row.emergency {
+  background: var(--red);
+}
+
+.bars {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 14px;
+}
+
+.bars span {
+  width: 3px;
+  background: var(--mustard);
+  border-radius: 2px;
+  animation: bar 1s infinite ease-in-out;
+}
+
+.bars span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.bars span:nth-child(2) { height: 14px; animation-delay: .15s; }
+.bars span:nth-child(3) { height: 9px; animation-delay: .3s; }
+.bars span:nth-child(4) { height: 12px; animation-delay: .45s; }
+
+@keyframes bar {
+  0%, 100% { transform: scaleY(.5); }
+  50% { transform: scaleY(1); }
+}
+
+/* Emergency CTA */
+.emergency-cta {
+  margin-top: 12px;
+  background: var(--red);
+  color: #fff;
+  text-align: center;
+  padding: 13px;
+  border-radius: 16px;
+  font-family: 'Baloo 2';
+  font-weight: 800;
+  font-size: 15.5px;
+  text-decoration: none;
+  display: block;
+  box-shadow: 0 8px 18px -4px rgba(192, 57, 43, 0.6);
+  cursor: pointer;
+  border: none;
+  width: 100%;
+}
+
+.emergency-cta .te {
+  display: block;
+  font-family: 'Noto Sans Telugu';
+  font-size: 12.5px;
+  font-weight: 600;
+  opacity: .95;
+  margin-top: 2px;
+}
+
+/* ASHA Header */
+.asha-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--teal);
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 16px;
+  margin-bottom: 14px;
+}
+
+.asha-header .av {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--mustard);
+  color: #3a2a05;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Baloo 2';
+  font-weight: 800;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.asha-header .meta {
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.asha-header .meta b {
+  font-family: 'Baloo 2';
+  font-size: 15px;
+}
+
+/* Section Box */
+.section-box {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 13px;
+  margin-top: 10px;
+}
+
+.section-box h3 {
+  font-family: 'Baloo 2';
+  font-size: 14.5px;
+  color: var(--teal-dark);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-box p {
+  font-size: 13.5px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.section-box .te {
+  font-family: 'Noto Sans Telugu';
+  color: var(--ink-soft);
+  margin-top: 2px;
+  display: block;
+}
+
+/* Footer note */
+.footer-note {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 12px;
+  margin-top: auto;
+  padding-top: 14px;
+  line-height: 1.4;
+}
+
+/* Settings Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-card h2 {
+  font-family: 'Baloo 2';
+  color: var(--teal-dark);
+  font-size: 20px;
+  margin-bottom: 12px;
+}

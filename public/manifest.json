@@ -1,0 +1,16 @@
+{
+  "short_name": "Swasth AI",
+  "name": "Swasth AI — గ్రామీణ ఆరోగ్య సహాయకుడు",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FBF6EC",
+  "theme_color": "#155E56",
+  "display": "standalone",
+  "orientation": "portrait"
+}
