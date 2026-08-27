@@ -8,7 +8,6 @@ import {
   Volume2, 
   VolumeX, 
   RotateCcw, 
-  Settings, 
   PhoneCall, 
   Check, 
   ChevronLeft, 
@@ -20,10 +19,17 @@ import {
   RefreshCw,
   Home,
   CheckCircle2,
-  Radio
+  Radio,
+  Send,
+  Share2,
+  ClipboardCheck,
+  Activity,
+  User,
+  MapPin,
+  HeartPulse
 } from 'lucide-react';
 
-const QUICK_SYMPTOMS = [
+const QUICK_PATIENT_SYMPTOMS = [
   { en: 'Fever & headache', te: 'జ్వరం, తలనొప్పి' },
   { en: 'Severe cough & cold', te: 'దగ్గు, జలుబు' },
   { en: 'Stomach pain & loose motions', te: 'కడుపునొప్పి, విరేచనాలు' },
@@ -31,23 +37,46 @@ const QUICK_SYMPTOMS = [
   { en: 'Heavy chest pain & left arm pain', te: 'తీవ్రమైన ఛాతీ నొప్పి (Emergency)' }
 ];
 
+const ASHA_COMMON_CONDITIONS = [
+  { id: 'fever', icon: '🌡️', en: 'Fever / Chills', te: 'జ్వరం / చలి' },
+  { id: 'cough', icon: '🫁', en: 'Cough & Breathless', te: 'దగ్గు & ఆయాసం' },
+  { id: 'diarrhea', icon: '🤢', en: 'Vomiting / Diarrhea', te: 'వాంతులు / విరేచనాలు' },
+  { id: 'maternal', icon: '🤰', en: 'Pregnancy Discomfort', te: 'గర్భిణీ సమస్యలు' },
+  { id: 'child', icon: '👶', en: 'Child / Infant Fever', te: 'పిల్లల ఆరోగ్యం' },
+  { id: 'bp', icon: '🩸', en: 'High BP / Dizziness', te: 'బీపీ / కళ్లు తిరగడం' },
+  { id: 'chest', icon: '💔', en: 'Chest Pain (Alert)', te: 'ఛాతీ నొప్పి (అత్యవసరం)' },
+  { id: 'headache', icon: '🤕', en: 'Severe Headache', te: 'తీవ్ర తలనొప్పి' },
+  { id: 'injury', icon: '🩹', en: 'Wound / Insect Bite', te: 'గాయం / కీటకం కాటు' }
+];
+
+const ASHA_KEY_OBSERVATIONS = [
+  { id: 'high_fever', en: 'High Fever (>101°F)', te: 'అధిక జ్వరం (>101°F)' },
+  { id: 'fast_breath', en: 'Fast Breathing / Gasps', te: 'వేగంగా శ్వాస' },
+  { id: 'dehydration', en: 'Severe Weakness / Thirst', te: 'తీవ్ర నీరసం / దాహం' },
+  { id: 'cannot_drink', en: 'Unable to drink liquids', te: 'నీళ్లు తాగలేకపోతున్నారు' },
+  { id: 'swelling', en: 'Leg / Face Swelling', te: 'కాళ్లు / ముఖం వాపు' }
+];
+
 export default function App() {
   // Navigation & Language
   const [lang, setLang] = useState('te'); // 'te' (Telugu) or 'en' (English)
-  const [currentScreen, setCurrentScreen] = useState('lang'); // 'lang', 'role', 'input_choice', 'patient_input', 'asha_input', 'followup', 'result'
+  const [currentScreen, setCurrentScreen] = useState('lang'); // 'lang', 'role', 'input_choice', 'patient_input', 'asha_input', 'followup', 'chat', 'result'
   const [userRole, setUserRole] = useState('patient'); // 'patient' or 'asha'
   const [autoVoiceMode, setAutoVoiceMode] = useState(false); // Seamless Hands-free Voice AI mode
   
   // ASHA Metadata
   const [patientName, setPatientName] = useState('');
   const [patientVillage, setPatientVillage] = useState('');
+  const [patientAge, setPatientAge] = useState('');
+  const [patientCategory, setPatientCategory] = useState('adult'); // 'adult', 'child', 'pregnant', 'elderly'
+  const [selectedVitals, setSelectedVitals] = useState([]);
   
   // Symptom Description State
   const [symptomText, setSymptomText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
   
-  // Follow-up Question Flow
+  // Follow-up Question Flow (Offline MCQ fallback)
   const [matchedCard, setMatchedCard] = useState(null);
   const [questionsList, setQuestionsList] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -56,17 +85,22 @@ export default function App() {
   const [isFollowupListening, setIsFollowupListening] = useState(false);
   const [followupSpokenText, setFollowupSpokenText] = useState('');
   
+  // Gemini Chat State
+  const [chatMessages, setChatMessages] = useState([]); // { role: 'ai'|'user', textEn, textTe?, options: [], text }
+  const [chatInput, setChatInput] = useState('');
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [chatError, setChatError] = useState('');
+  const [isChatListening, setIsChatListening] = useState(false);
+  const [geminiHistory, setGeminiHistory] = useState([]);
+  const [copiedRecord, setCopiedRecord] = useState(false);
+  const chatEndRef = useRef(null);
+  
   // Triage Outcome State
   const [triageResult, setTriageResult] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [playCount, setPlayCount] = useState(0);
 
-  // Settings Modal
-  const [showSettings, setShowSettings] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(aiTriageService.getApiKey());
-  const [savedKeyMsg, setSavedKeyMsg] = useState(false);
-
-  // Reference to track active question in callbacks without closure stale state
+  // References for reliable callbacks
   const questionsListRef = useRef(questionsList);
   questionsListRef.current = questionsList;
   const currentQIndexRef = useRef(currentQuestionIndex);
@@ -76,10 +110,16 @@ export default function App() {
   const langRef = useRef(lang);
   langRef.current = lang;
 
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isAiTyping]);
+
   // Auto Voice Agent Lifecycle
   useEffect(() => {
     if (currentScreen === 'patient_input' && autoVoiceMode) {
-      // Step 1 on Symptom Input: Speak welcoming prompt, then immediately auto-listen
       const welcomePrompt = lang === 'te' 
         ? 'మీకు ఏమి ఇబ్బందిగా ఉందో స్పష్టంగా చెప్పండి.' 
         : 'Please tell us what health problem you are experiencing.';
@@ -90,19 +130,16 @@ export default function App() {
         onStart: () => setIsPlayingAudio(true),
         onEnd: () => {
           setIsPlayingAudio(false);
-          // Automatically start microphone to listen to patient
           setTimeout(() => {
             handleStartListeningAuto();
-          }, 300);
+          }, 250);
         },
         onError: () => setIsPlayingAudio(false)
       });
     } else if (currentScreen === 'followup' && questionsList.length > 0) {
-      // Step 2 on Questions: Speak the question in Telugu, then immediately auto-listen for answer
       const q = questionsList[currentQuestionIndex];
       if (q) {
         const questionPrompt = lang === 'te' ? q.qTe : q.qEn;
-        
         voiceEngine.speak({
           text: questionPrompt,
           lang: lang === 'te' ? 'te-IN' : 'en-IN',
@@ -110,17 +147,15 @@ export default function App() {
           onEnd: () => {
             setIsPlayingAudio(false);
             if (autoVoiceModeRef.current) {
-              // Automatically open mic to capture patient's answer
               setTimeout(() => {
                 handleStartFollowupListeningAuto();
-              }, 300);
+              }, 250);
             }
           },
           onError: () => setIsPlayingAudio(false)
         });
       }
     } else if (currentScreen === 'result' && triageResult) {
-      // Step 3 on Result: Automatically speak out the clinical advice in Telugu
       const resultPrompt = lang === 'te' ? triageResult.spokenTe : triageResult.spokenEn;
       handlePlayVoice(resultPrompt);
       if (triageResult.urgency.key === 'ROUTINE_LOW') {
@@ -177,7 +212,7 @@ export default function App() {
     }
   };
 
-  // Automatic & Manual Voice Recognition for Follow-up Question Answer
+  // Automatic & Manual Voice Recognition for Follow-up Question Answer (Offline MCQ)
   const handleStartFollowupListeningAuto = () => {
     setFollowupSpokenText('');
     const qList = questionsListRef.current;
@@ -193,7 +228,6 @@ export default function App() {
 
         if (final || text) {
           const spokenLower = (final || text).toLowerCase();
-          // Match against options
           let matched = null;
           for (const opt of currentQ.options) {
             const enMatch = spokenLower.includes(opt.en.toLowerCase()) || spokenLower.includes(opt.value);
@@ -247,15 +281,38 @@ export default function App() {
     setIsPlayingAudio(false);
   };
 
-  // Submit Initial Symptom -> Trigger Clinical Engine
+  // Toggle ASHA vitals tag
+  const handleToggleVital = (vitalId) => {
+    setSelectedVitals(prev => 
+      prev.includes(vitalId) ? prev.filter(id => id !== vitalId) : [...prev, vitalId]
+    );
+  };
+
+  // ─── Submit Initial Symptom -> Route to Chat or MCQ ───
   const handleAnalyzeSymptom = async () => {
     if (!symptomText.trim()) return;
     voiceEngine.stopListening();
     voiceEngine.stopSpeaking();
     setIsListening(false);
 
-    // 1. Check for immediate emergency triggers
-    const emergencyCheck = aiTriageService.checkImmediateEmergency(symptomText);
+    // Build comprehensive symptom payload including vitals if ASHA mode
+    let fullSymptomDescription = symptomText.trim();
+    if (userRole === 'asha') {
+      const vitalsText = selectedVitals.map(vId => {
+        const item = ASHA_KEY_OBSERVATIONS.find(v => v.id === vId);
+        return item ? item.en : vId;
+      }).join(', ');
+      
+      if (vitalsText) {
+        fullSymptomDescription += ` | Observations: ${vitalsText}`;
+      }
+      if (patientCategory !== 'adult') {
+        fullSymptomDescription += ` | Category: ${patientCategory}`;
+      }
+    }
+
+    // 1. Check for immediate emergency triggers (offline instant check)
+    const emergencyCheck = aiTriageService.checkImmediateEmergency(fullSymptomDescription);
     if (emergencyCheck) {
       const emergencyResult = {
         urgency: URGENCY_CLASSES.EMERGENCY,
@@ -268,7 +325,9 @@ export default function App() {
         precautionsEn: 'Call 108 emergency immediately. Sit upright, do not exert yourself.',
         precautionsTe: 'వెంటనే 108కి కాల్ చేయండి. నిటారుగా కూర్చోండి, శ్రమ పడవద్దు.',
         avoidEn: 'Do not delay, do not drive yourself.',
-        avoidTe: 'ఆలస్యం చేయవద్దు, స్వయంగా డ్రైవింగ్ చేయవద్దు.'
+        avoidTe: 'ఆలస్యం చేయవద్దు, స్వయంగా డ్రైవింగ్ చేయవద్దు.',
+        ashaActionEn: emergencyCheck.ashaActionEn,
+        ashaActionTe: emergencyCheck.ashaActionTe
       };
       setTriageResult(emergencyResult);
       setPlayCount(0);
@@ -276,7 +335,77 @@ export default function App() {
       return;
     }
 
-    // 2. Fetch matched follow-up questions
+    // 2. Start Gemini Chat
+    if (aiTriageService.hasApiKey()) {
+      setChatMessages([]);
+      setGeminiHistory([]);
+      setChatInput('');
+      setChatError('');
+      setIsChatListening(false);
+      setIsAiTyping(true);
+      setCurrentScreen('chat');
+
+      const patientContext = {
+        userRole,
+        patientName,
+        patientVillage,
+        patientAge,
+        patientCategory,
+        vitals: selectedVitals.join(', ')
+      };
+
+      try {
+        const response = await aiTriageService.chatWithGemini([], fullSymptomDescription, patientContext);
+        
+        if (response.done) {
+          setTriageResult(response);
+          setPlayCount(0);
+          setCurrentScreen('result');
+          return;
+        }
+
+        // Add AI's first question with quick response options
+        const aiMsg = {
+          role: 'ai',
+          textEn: response.questionEn,
+          textTe: response.questionTe,
+          options: response.options || [],
+          text: response.rawResponse
+        };
+        setChatMessages([aiMsg]);
+        setGeminiHistory([{ role: 'ai', text: response.rawResponse }]);
+        setIsAiTyping(false);
+
+        // Crisp audio playback
+        if (autoVoiceMode) {
+          const speakText = lang === 'te' ? response.questionTe : response.questionEn;
+          voiceEngine.speak({
+            text: speakText,
+            lang: lang === 'te' ? 'te-IN' : 'en-IN',
+            onStart: () => setIsPlayingAudio(true),
+            onEnd: () => {
+              setIsPlayingAudio(false);
+              setTimeout(() => handleStartChatListening(), 250);
+            },
+            onError: () => setIsPlayingAudio(false)
+          });
+        }
+      } catch (err) {
+        console.error('Gemini init error:', err);
+        setChatError(lang === 'te' 
+          ? 'AI సర్వర్‌తో కనెక్ట్ కాలేదు. ఆఫ్‌లైన్ మోడ్‌కు మారుతోంది...' 
+          : 'Could not connect to AI. Switching to offline mode...');
+        setIsAiTyping(false);
+        setTimeout(() => {
+          fallbackToOfflineMCQ();
+        }, 1500);
+      }
+    } else {
+      fallbackToOfflineMCQ();
+    }
+  };
+
+  const fallbackToOfflineMCQ = () => {
     const followUpData = aiTriageService.getFollowUpQuestions(symptomText);
     setMatchedCard(followUpData.matchedCard);
     setQuestionsList(followUpData.questions || []);
@@ -287,7 +416,123 @@ export default function App() {
     setCurrentScreen('followup');
   };
 
-  // Select follow-up question answer with smooth feedback transition
+  // ─── CHAT: Send user message to Gemini ───
+  const handleSendChatMessage = async (messageText) => {
+    const text = (messageText || chatInput).trim();
+    if (!text || isAiTyping) return;
+
+    voiceEngine.stopSpeaking();
+    voiceEngine.stopListening();
+    setIsChatListening(false);
+
+    // Add user message
+    const userMsg = { role: 'user', text };
+    const updatedMessages = [...chatMessages, userMsg];
+    setChatMessages(updatedMessages);
+    setChatInput('');
+    setChatError('');
+
+    // Build history for API
+    const updatedHistory = [...geminiHistory, { role: 'user', text }];
+    setGeminiHistory(updatedHistory);
+    setIsAiTyping(true);
+
+    const patientContext = {
+      userRole,
+      patientName,
+      patientVillage,
+      patientAge,
+      patientCategory
+    };
+
+    try {
+      const response = await aiTriageService.chatWithGemini(updatedHistory, symptomText, patientContext);
+
+      if (response.done) {
+        const aiMsg = {
+          role: 'ai',
+          textEn: response.adviceEn,
+          textTe: response.adviceTe,
+          text: JSON.stringify(response),
+          isFinal: true
+        };
+        setChatMessages(prev => [...prev, aiMsg]);
+        setIsAiTyping(false);
+
+        setTimeout(() => {
+          setTriageResult(response);
+          setPlayCount(0);
+          setCurrentScreen('result');
+        }, 1200);
+      } else {
+        const aiMsg = {
+          role: 'ai',
+          textEn: response.questionEn,
+          textTe: response.questionTe,
+          options: response.options || [],
+          text: response.rawResponse
+        };
+        setChatMessages(prev => [...prev, aiMsg]);
+        setGeminiHistory(prev => [...prev, { role: 'ai', text: response.rawResponse }]);
+        setIsAiTyping(false);
+
+        if (autoVoiceMode) {
+          const speakText = lang === 'te' ? response.questionTe : response.questionEn;
+          voiceEngine.speak({
+            text: speakText,
+            lang: lang === 'te' ? 'te-IN' : 'en-IN',
+            onStart: () => setIsPlayingAudio(true),
+            onEnd: () => {
+              setIsPlayingAudio(false);
+              setTimeout(() => handleStartChatListening(), 250);
+            },
+            onError: () => setIsPlayingAudio(false)
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Gemini chat error:', err);
+      setIsAiTyping(false);
+      setChatError(lang === 'te'
+        ? 'AI నుండి సమాధానం రాలేదు. మళ్ళీ ప్రయత్నించండి.'
+        : 'Failed to get AI response. Please try again.');
+    }
+  };
+
+  // ─── CHAT: Voice input ───
+  const handleStartChatListening = () => {
+    const started = voiceEngine.startListening({
+      lang: langRef.current === 'te' ? 'te-IN' : 'en-IN',
+      onResult: ({ final, interim, text }) => {
+        if (final || text) {
+          const spoken = (final || text).trim();
+          setChatInput(spoken);
+          setTimeout(() => {
+            handleSendChatMessage(spoken);
+          }, 350);
+        } else if (interim) {
+          setChatInput(interim);
+        }
+      },
+      onEnd: () => setIsChatListening(false),
+      onError: (err) => {
+        console.warn('Chat STT:', err);
+        setIsChatListening(false);
+      }
+    });
+    setIsChatListening(started);
+  };
+
+  const handleToggleChatListening = () => {
+    if (isChatListening) {
+      voiceEngine.stopListening();
+      setIsChatListening(false);
+    } else {
+      handleStartChatListening();
+    }
+  };
+
+  // Offline MCQ Answer Selector
   const handleSelectAnswer = (questionId, value, optionObj = null) => {
     voiceEngine.stopSpeaking();
     voiceEngine.stopListening();
@@ -304,39 +549,56 @@ export default function App() {
       if (currentQuestionIndex + 1 < questionsList.length) {
         setCurrentQuestionIndex(prev => prev + 1);
       } else {
-        // Calculate final triage result
         const localResult = aiTriageService.computeTriageResult({
           initialSymptom: symptomText,
           matchedCard: matchedCard,
           answers: updatedAnswers
         });
 
-        if (aiTriageService.getApiKey()) {
-          const cloudResult = await aiTriageService.callGeminiTriage({
-            symptom: symptomText,
-            answers: updatedAnswers
-          });
-          setTriageResult(cloudResult || localResult);
-        } else {
-          setTriageResult(localResult);
-        }
-
+        setTriageResult(localResult);
         setPlayCount(0);
         setCurrentScreen('result');
       }
-    }, 450);
+    }, 400);
   };
 
-  // Next Patient in ASHA Mode
+  // Copy ASHA Case Record to Clipboard / WhatsApp Share format
+  const handleCopyRecord = () => {
+    if (!triageResult) return;
+    
+    const recordText = `🏥 *Swasth AI - ASHA Triage Report*
+👤 *Patient:* ${patientName || 'Anonymous'} (${patientCategory.toUpperCase()})
+📍 *Village:* ${patientVillage || 'Not specified'}
+🤒 *Symptoms:* ${symptomText}
+📊 *Urgency Level:* ${triageResult.urgency.labelEn} / ${triageResult.urgency.labelTe}
+🩺 *Condition Assessment:* ${triageResult.matchedConditionEn} (${triageResult.matchedConditionTe})
+📋 *ASHA Action Protocol:* ${triageResult.ashaActionEn || triageResult.adviceEn}
+🌿 *Advice:* ${triageResult.adviceEn}
+---
+Generated via Swasth AI Rural Healthcare Assistant`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(recordText);
+      setCopiedRecord(true);
+      setTimeout(() => setCopiedRecord(false), 2500);
+    }
+  };
+
+  // Reset for Next Patient in ASHA Mode
   const handleNextPatient = () => {
     voiceEngine.stopSpeaking();
     voiceEngine.stopListening();
     setPatientName('');
     setPatientVillage('');
+    setPatientAge('');
+    setPatientCategory('adult');
+    setSelectedVitals([]);
     setSymptomText('');
     setInterimText('');
     setAnswers({});
     setTriageResult(null);
+    setChatMessages([]);
+    setGeminiHistory([]);
     setPlayCount(0);
     setCurrentScreen('asha_input');
   };
@@ -345,22 +607,19 @@ export default function App() {
   const handleRestart = () => {
     voiceEngine.stopSpeaking();
     voiceEngine.stopListening();
+    setPatientName('');
+    setPatientVillage('');
+    setPatientAge('');
+    setPatientCategory('adult');
+    setSelectedVitals([]);
     setSymptomText('');
     setInterimText('');
     setAnswers({});
     setTriageResult(null);
+    setChatMessages([]);
+    setGeminiHistory([]);
     setPlayCount(0);
     setCurrentScreen('role');
-  };
-
-  // Save Settings
-  const handleSaveApiKey = () => {
-    aiTriageService.setApiKey(apiKeyInput.trim());
-    setSavedKeyMsg(true);
-    setTimeout(() => {
-      setSavedKeyMsg(false);
-      setShowSettings(false);
-    }, 1200);
   };
 
   return (
@@ -386,9 +645,6 @@ export default function App() {
             <span>🌐</span>
             <span>{lang === 'te' ? 'English' : 'తెలుగు'}</span>
           </button>
-          <button className="icon-btn" onClick={() => setShowSettings(true)} title="AI Settings">
-            <Settings size={18} />
-          </button>
         </div>
       </header>
 
@@ -400,7 +656,7 @@ export default function App() {
             <span className="te">మీ భాషను ఎంచుకోండి</span>
           </h2>
           <p className="sub-desc">
-            One task per screen. Big buttons. Speaks the answer in Telugu.
+            Fast, voice-guided healthcare decision support.
             <span className="te">ప్రతి స్క్రీన్ సులభంగా ఉంటుంది. తెలుగులో వాయిస్ ద్వారా సమాధానం వినవచ్చు.</span>
           </p>
 
@@ -429,7 +685,7 @@ export default function App() {
           </div>
 
           <div className="footer-note">
-            Whole app text switches instantly. No account, no sign-up.
+            Powered by Gemini AI · No account required.
             <span className="te" style={{ display: 'block', marginTop: '2px' }}>ఖాతా లేదా రిజిస్ట్రేషన్ అవసరం లేదు.</span>
           </div>
         </div>
@@ -487,7 +743,7 @@ export default function App() {
           </div>
 
           <div className="footer-note">
-            Two different journeys — patient self-check, or worker-assisted check.
+            Specialized clinical decision workflows for rural health workers.
             <span className="te" style={{ display: 'block', marginTop: '2px' }}>గ్రామీణ ప్రజలు మరియు ఆశా కార్యకర్తల కోసం.</span>
           </div>
         </div>
@@ -550,7 +806,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Screen 4: First Symptom Description */}
+      {/* Screen 4: First Symptom Description (Patient Mode) */}
       {currentScreen === 'patient_input' && (
         <div className="screen-body">
           <div className="back-row">
@@ -609,7 +865,7 @@ export default function App() {
               Quick test symptoms / ఉదాహరణ లక్షణాలు:
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {QUICK_SYMPTOMS.map((symp, i) => (
+              {QUICK_PATIENT_SYMPTOMS.map((symp, i) => (
                 <button 
                   key={i}
                   className="quick-chip"
@@ -630,86 +886,159 @@ export default function App() {
             >
               <span className="ic"><Check size={22} /></span>
               <span className="txt">
-                <span>Continue</span>
-                <span className="te">కొనసాగించండి</span>
+                <span>Continue to AI Analysis</span>
+                <span className="te">AI తనిఖీని ప్రారంభించండి</span>
               </span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Screen 4b: ASHA Worker Input Mode */}
+      {/* ═══════════════════════════════════════════
+          Screen 4b: ASHA Worker Fast Input Portal
+          ═══════════════════════════════════════════ */}
       {currentScreen === 'asha_input' && (
         <div className="screen-body">
           <div className="back-row">
             <button className="back-chip" onClick={() => setCurrentScreen('role')}>
               <ChevronLeft size={20} />
             </button>
-          </div>
-
-          <div className="asha-header">
-            <span className="av">A</span>
-            <div className="meta">
-              <b>ASHA mode</b>
-              <div>Entering for a patient / రోగి వివరాలు</div>
+            <div style={{ flex: 1, fontWeight: 800, fontSize: '14px', color: 'var(--teal-dark)' }}>
+              🩺 ASHA Rural Case Entry / రోగి నమోదు
             </div>
           </div>
 
-          <div className="field">
-            <label>Patient name / village (రోగి పేరు / గ్రామం)</label>
+          {/* Patient Details Row */}
+          <div className="field" style={{ marginTop: '4px' }}>
+            <label style={{ fontSize: '12px' }}>Patient & Village (పేరు / గ్రామం)</label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input 
                 type="text" 
-                placeholder="Lakshmi / లక్ష్మి" 
+                placeholder="Name / పేరు" 
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
-                style={{ flex: 1 }}
+                style={{ flex: 1.2 }}
               />
               <input 
                 type="text" 
-                placeholder="Kondapalli / కొండపల్లి" 
+                placeholder="Village / గ్రామం" 
                 value={patientVillage}
                 onChange={(e) => setPatientVillage(e.target.value)}
                 style={{ flex: 1 }}
               />
+              <input 
+                type="text" 
+                placeholder="Age" 
+                value={patientAge}
+                onChange={(e) => setPatientAge(e.target.value)}
+                style={{ width: '60px' }}
+              />
             </div>
           </div>
 
-          <div className="field">
-            <label>Symptoms / లక్షణాలు</label>
+          {/* Category Selector Pills */}
+          <div className="gender-pills-row">
+            {[
+              { id: 'adult', en: 'Adult (వయోజనుడు)', icon: '🧑' },
+              { id: 'child', en: 'Child (పిల్లలు)', icon: '👶' },
+              { id: 'pregnant', en: 'Pregnant (గర్భిణీ)', icon: '🤰' },
+              { id: 'elderly', en: 'Elderly (వృద్ధులు)', icon: '👵' }
+            ].map(cat => (
+              <button 
+                key={cat.id}
+                className={`gender-pill ${patientCategory === cat.id ? 'on' : ''}`}
+                onClick={() => setPatientCategory(cat.id)}
+              >
+                {cat.icon} {cat.en}
+              </button>
+            ))}
+          </div>
+
+          {/* 1-Tap Quick Common Condition Grid for ASHA */}
+          <div className="asha-grid-title">
+            <HeartPulse size={15} /> 1-Tap Common Symptoms / ముఖ్య లక్షణాలు:
+          </div>
+          <div className="asha-symptoms-grid">
+            {ASHA_COMMON_CONDITIONS.map(item => {
+              const isActive = symptomText.includes(lang === 'te' ? item.te : item.en);
+              return (
+                <button 
+                  key={item.id}
+                  className={`asha-symptom-card ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    const textToAdd = lang === 'te' ? item.te : item.en;
+                    if (symptomText) {
+                      setSymptomText(prev => `${prev}, ${textToAdd}`);
+                    } else {
+                      setSymptomText(textToAdd);
+                    }
+                  }}
+                >
+                  <span className="sym-icon">{item.icon}</span>
+                  <span className="sym-name">{item.en}</span>
+                  <span className="sym-te">{item.te}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Observations & Vitals Checklist */}
+          <div className="asha-grid-title" style={{ marginTop: '4px' }}>
+            <Activity size={15} /> Key Vitals / పరిశీలనలు (Toggles):
+          </div>
+          <div className="vitals-track-row">
+            {ASHA_KEY_OBSERVATIONS.map(obs => {
+              const isSelected = selectedVitals.includes(obs.id);
+              return (
+                <button 
+                  key={obs.id}
+                  className={`vitals-chip ${isSelected ? 'active' : ''}`}
+                  onClick={() => handleToggleVital(obs.id)}
+                >
+                  {isSelected ? '✓ ' : '+ '}
+                  {lang === 'te' ? obs.te : obs.en}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Symptom Text Box with Mic */}
+          <div className="field" style={{ marginTop: '10px' }}>
+            <label style={{ fontSize: '12px' }}>Detailed Symptoms / ఇతర లక్షణాలు:</label>
             <div style={{ position: 'relative' }}>
               <textarea 
-                rows={3}
-                placeholder="fever 3 days, not eating well / 3 రోజులుగా జ్వరం, నీరసం..."
+                rows={2}
+                placeholder="fever 3 days, body pain / 3 రోజులుగా జ్వరం, నీరసం..."
                 value={symptomText}
                 onChange={(e) => setSymptomText(e.target.value)}
+                style={{ paddingRight: '46px', minHeight: '60px' }}
               />
               <button 
                 className={`icon-btn ${isListening ? 'listening' : ''}`}
                 onClick={handleToggleListening}
                 style={{
                   position: 'absolute',
-                  right: '10px',
-                  bottom: '12px',
+                  right: '8px',
+                  bottom: '10px',
                   background: isListening ? 'var(--red)' : 'var(--teal)',
                   color: '#fff',
                   borderRadius: '50%',
-                  width: '32px',
-                  height: '32px'
+                  width: '34px',
+                  height: '34px'
                 }}
                 title="Speak Telugu"
               >
-                <Mic size={16} />
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
               </button>
             </div>
+            {interimText && (
+              <div style={{ fontSize: '11px', color: 'var(--teal)', marginTop: '2px', fontStyle: 'italic' }}>
+                Hearing: {interimText}...
+              </div>
+            )}
           </div>
 
-          <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--ink-soft)' }}>
-            AI will ask 2–4 follow-up questions next, same as patient mode.
-            <span className="te" style={{ display: 'block', marginTop: '2px' }}>తర్వాత AI 2-4 ప్రశ్నలు అడుగుతుంది.</span>
-          </div>
-
-          <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+          <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
             <button 
               className="big-btn mustard" 
               disabled={!symptomText.trim()}
@@ -718,15 +1047,171 @@ export default function App() {
             >
               <span className="ic"><Check size={22} /></span>
               <span className="txt">
-                <span>Continue to questions</span>
-                <span className="te">ప్రశ్నలకు కొనసాగించండి</span>
+                <span>Start AI Triage Check</span>
+                <span className="te">AI తనిఖీని ప్రారంభించండి</span>
               </span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Screen 5: AI Asks Follow-ups (Questions Flow) */}
+      {/* ═══════════════════════════════════════════
+          Screen 5a: Gemini AI Chat Consultation
+          ═══════════════════════════════════════════ */}
+      {currentScreen === 'chat' && (
+        <div className="screen-body" style={{ padding: '12px 14px 10px' }}>
+          <div className="back-row" style={{ marginBottom: '8px' }}>
+            <button 
+              className="back-chip" 
+              onClick={() => {
+                voiceEngine.stopSpeaking();
+                voiceEngine.stopListening();
+                setCurrentScreen(userRole === 'asha' ? 'asha_input' : 'patient_input');
+              }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div style={{ flex: 1, fontSize: '13px', fontWeight: 800, color: 'var(--teal-dark)' }}>
+              <Sparkles size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+              {userRole === 'asha' 
+                ? (lang === 'te' ? `ASHA తనిఖీ: ${patientName || 'రోగి'}` : `ASHA Triage: ${patientName || 'Patient'}`)
+                : (lang === 'te' ? 'Swasth AI సంభాషణ' : 'Swasth AI Consultation')}
+            </div>
+            {autoVoiceMode && (
+              <div className="voice-indicator-badge" style={{ fontSize: '10px', padding: '3px 6px' }}>
+                <Radio size={10} className="pulse-icon" />
+                <span>Auto</span>
+              </div>
+            )}
+          </div>
+
+          {/* Symptom context chip */}
+          <div style={{ 
+            background: 'var(--mustard-soft)', 
+            padding: '7px 12px', 
+            borderRadius: '12px', 
+            fontSize: '12px',
+            color: '#3a2a05',
+            fontWeight: 700,
+            marginBottom: '8px'
+          }}>
+            📋 {lang === 'te' ? 'లక్షణం' : 'Symptom'}: {symptomText}
+          </div>
+
+          {/* Chat container */}
+          <div className="chat-container">
+            <div className="chat-messages">
+              {chatMessages.map((msg, idx) => {
+                const isLatestAiMsg = msg.role === 'ai' && idx === chatMessages.length - 1 && !isAiTyping && !msg.isFinal;
+                return (
+                  <div key={idx} className={`chat-bubble ${msg.role}`}>
+                    {msg.role === 'ai' ? (
+                      <>
+                        <div className="bubble-label">Swasth AI</div>
+                        <div style={{ fontSize: '14.5px', fontWeight: 600 }}>{msg.textEn}</div>
+                        {msg.textTe && <span className="te" style={{ fontSize: '14px', fontWeight: 700 }}>{msg.textTe}</span>}
+                        
+                        {msg.isFinal && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 800, color: 'var(--green)' }}>
+                            ✓ {lang === 'te' ? 'అంచనా పూర్తయింది. ఫలితం చూపిస్తోంది...' : 'Assessment complete. Showing result...'}
+                          </div>
+                        )}
+
+                        <button 
+                          className="chat-speak-btn"
+                          onClick={() => handlePlayVoice(lang === 'te' ? (msg.textTe || msg.textEn) : msg.textEn)}
+                        >
+                          <Volume2 size={13} />
+                          {lang === 'te' ? 'వాయిస్ వినండి' : 'Listen'}
+                        </button>
+
+                        {/* 1-Tap Quick Response Option Pills from Gemini */}
+                        {isLatestAiMsg && msg.options && msg.options.length > 0 && (
+                          <div className="chat-quick-options">
+                            {msg.options.map((opt, oIdx) => {
+                              const optionLabel = lang === 'te' ? (opt.te || opt.en) : opt.en;
+                              return (
+                                <button 
+                                  key={oIdx}
+                                  className="chat-option-chip"
+                                  onClick={() => handleSendChatMessage(optionLabel)}
+                                >
+                                  <span>{opt.en}</span>
+                                  {opt.te && <span className="chip-te">{opt.te}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ fontWeight: 600 }}>{msg.text}</div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Typing indicator */}
+              {isAiTyping && (
+                <div className="typing-indicator">
+                  <div className="typing-dots">
+                    <span /><span /><span />
+                  </div>
+                  <span className="typing-label">
+                    {lang === 'te' ? 'Swasth AI ఆలోచిస్తోంది...' : 'Swasth AI is analyzing...'}
+                  </span>
+                </div>
+              )}
+
+              {/* Error message */}
+              {chatError && (
+                <div className="chat-error">{chatError}</div>
+              )}
+
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat input bar */}
+            <div className="chat-input-bar">
+              <button 
+                className={`chat-mic-btn ${isChatListening ? 'listening' : ''}`}
+                onClick={handleToggleChatListening}
+                title={isChatListening ? 'Stop' : 'Speak'}
+              >
+                {isChatListening ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+              <input 
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder={lang === 'te' ? 'సమాధానం టైప్ చేయండి లేదా మాట్లాడండి...' : 'Type answer or speak into mic...'}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendChatMessage();
+                  }
+                }}
+                disabled={isAiTyping}
+              />
+              <button 
+                className="chat-send-btn"
+                onClick={() => handleSendChatMessage()}
+                disabled={!chatInput.trim() || isAiTyping}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+
+            {isChatListening && (
+              <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--red)', fontWeight: 700, padding: '4px 0' }}>
+                🎙️ {lang === 'te' ? 'వింటోంది… సమాధానం చెప్పండి' : 'Listening... speak now'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Screen 5b: Offline MCQ Fallback */}
       {currentScreen === 'followup' && questionsList.length > 0 && (
         <div className="screen-body">
           <div className="back-row">
@@ -758,7 +1243,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Spoken Question Box with Speaker Audio Control */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginTop: '8px' }}>
             <button 
               className="icon-btn" 
@@ -790,7 +1274,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Choice Selection Pills */}
           <div className="pill-row" style={{ marginTop: '16px' }}>
             {questionsList[currentQuestionIndex]?.options.map((opt) => {
               const isSelected = selectedOptionTemp === opt.value || answers[questionsList[currentQuestionIndex].id] === opt.value;
@@ -807,7 +1290,6 @@ export default function App() {
             })}
           </div>
 
-          {/* Confirmed Selection Feedback */}
           {selectedOptionTemp && (
             <div style={{ textAlign: 'right', marginTop: '10px' }}>
               <div className="confirmed-chip">
@@ -817,7 +1299,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Voice Answer Mic */}
           <div style={{ marginTop: 'auto', paddingTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <button 
               className={`mic-circle ${isFollowupListening ? 'listening' : ''}`}
@@ -853,14 +1334,18 @@ export default function App() {
             >
               <ChevronLeft size={20} />
             </button>
+            <div style={{ flex: 1, fontSize: '14px', fontWeight: 800, color: 'var(--teal-dark)' }}>
+              {userRole === 'asha' ? '🩺 ASHA Case Assessment' : 'Clinical Triage Result'}
+            </div>
           </div>
 
-          {userRole === 'asha' && (patientName || patientVillage) && (
+          {/* Patient Card Header in ASHA Mode */}
+          {userRole === 'asha' && (
             <div className="asha-header">
               <span className="av">A</span>
               <div className="meta">
-                <b>Patient: {patientName || 'Anonymous'}</b>
-                <div>{patientVillage ? `Village: ${patientVillage}` : 'Rural visit record'}</div>
+                <b>Patient: {patientName || 'Anonymous'} ({patientAge || 'Age --'})</b>
+                <div>Village: {patientVillage || 'Rural visit'} · {patientCategory.toUpperCase()}</div>
               </div>
             </div>
           )}
@@ -893,6 +1378,17 @@ export default function App() {
             )}
           </div>
 
+          {/* Specific ASHA Clinical Referral Box */}
+          {userRole === 'asha' && (
+            <div className={`asha-action-box ${triageResult.urgency.tier === 'red' ? 'emergency' : ''}`}>
+              <h3>
+                <Activity size={18} />
+                {lang === 'te' ? 'ఆశా వర్కర్ చేయవలసిన పనులు (Action Plan)' : 'ASHA Action Protocol'}
+              </h3>
+              <p>{lang === 'te' ? (triageResult.ashaActionTe || triageResult.adviceTe) : (triageResult.ashaActionEn || triageResult.adviceEn)}</p>
+            </div>
+          )}
+
           {/* Spoken Advice Box */}
           <div className="advice-card">
             <strong>{triageResult.adviceEn}</strong>
@@ -911,13 +1407,13 @@ export default function App() {
             <p>{lang === 'te' ? triageResult.avoidTe : triageResult.avoidEn}</p>
           </div>
 
-          {/* Unlimited Replay Button with Play Counter */}
+          {/* Replay Button with Play Counter */}
           <button 
             className="big-btn ghost" 
-            style={{ marginTop: '14px', minHeight: '62px' }}
+            style={{ marginTop: '12px', minHeight: '56px' }}
             onClick={() => handlePlayVoice(lang === 'te' ? triageResult.spokenTe : triageResult.spokenEn)}
           >
-            <span className="ic"><RotateCcw size={20} /></span>
+            <span className="ic"><RotateCcw size={18} /></span>
             <span className="txt">
               <span>Play again (మళ్లీ వినండి)</span>
               <span className="te" style={{ fontSize: '12px' }}>
@@ -925,6 +1421,17 @@ export default function App() {
               </span>
             </span>
           </button>
+
+          {/* Copy / WhatsApp Case Record Button for ASHA */}
+          {userRole === 'asha' && (
+            <button 
+              className="share-action-btn"
+              onClick={handleCopyRecord}
+            >
+              {copiedRecord ? <ClipboardCheck size={18} /> : <Share2 size={18} />}
+              <span>{copiedRecord ? '✓ Case Record Copied!' : 'Copy / Share ASHA Case Report'}</span>
+            </button>
+          )}
 
           {/* Emergency 108 Action for Red Tier */}
           {triageResult.urgency.tier === 'red' && (
@@ -965,51 +1472,6 @@ export default function App() {
           <div className="footer-note">
             Safety Notice: Decision-support guidance only, not a doctor diagnosis.
             <span className="te" style={{ display: 'block', marginTop: '2px' }}>ఇది ప్రాథమిక ఆరోగ్య సమాచారం మాత్రమే, వైద్యుని నిర్ధారణ కాదు.</span>
-          </div>
-        </div>
-      )}
-
-      {/* Settings Modal (Gemini API Configuration) */}
-      {showSettings && (
-        <div className="modal-backdrop" onClick={() => setShowSettings(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h2>⚙️ Swasth AI Settings</h2>
-            <p style={{ fontSize: '13px', color: 'var(--ink-soft)', marginBottom: '14px' }}>
-              Swasth AI operates with the <strong>Built-in Offline Clinical Decision Engine</strong> by default. You can optionally connect a free Google Gemini API Key for cloud triage.
-            </p>
-
-            <div className="field">
-              <label>Google Gemini API Key (Optional)</label>
-              <input 
-                type="password" 
-                placeholder="AIzaSy..." 
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-              />
-            </div>
-
-            {savedKeyMsg && (
-              <div style={{ color: 'var(--green)', fontSize: '13px', marginTop: '8px', fontWeight: 'bold' }}>
-                ✓ Settings saved successfully!
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-              <button 
-                className="big-btn mustard" 
-                style={{ padding: '10px 16px', fontSize: '15px' }}
-                onClick={handleSaveApiKey}
-              >
-                Save Settings
-              </button>
-              <button 
-                className="big-btn ghost" 
-                style={{ padding: '10px 16px', fontSize: '15px' }}
-                onClick={() => setShowSettings(false)}
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}
